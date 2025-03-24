@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header, Footer, Guitar } from "./components";
 import { db } from "./data/db";
 
 function App() {
-  const [data, setData] = useState(db);
-  const [cart, setCart] = useState([]);
+  const initialCart = () => {
+    const localStorageCart = localStorage.getItem("cart");
+    return localStorageCart ? JSON.parse(localStorageCart) : [];
+  };
+
+  const [data] = useState(db);
+  const [cart, setCart] = useState(initialCart);
 
   function addToCart(item) {
     const itemExist = cart.findIndex((cartItem) => cartItem.id === item.id);
@@ -20,12 +25,43 @@ function App() {
       setCart((prevCart) => [...prevCart, newItem]);
     }
   }
+
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
+
   function removeFromCart(itemId) {
     setCart((prevCart) => prevCart.filter((item) => item.id !== itemId));
   }
+
+  function updateItemQuantity(item, delta) {
+    const itemToUpdate = cart.findIndex((cartItem) => cartItem.id === item.id);
+    const updatedCart = [...cart];
+    const newQuantity = updatedCart[itemToUpdate].quantity + delta;
+
+    if (newQuantity !== 0) {
+      updatedCart[itemToUpdate] = {
+        ...updatedCart[itemToUpdate],
+        quantity: newQuantity,
+      };
+      setCart(updatedCart);
+    } else {
+      removeFromCart(item.id);
+    }
+  }
+
+  function clearCart() {
+    setCart([]);
+  }
+
   return (
     <>
-      <Header cart={cart} removeFromCart={removeFromCart}></Header>
+      <Header
+        cart={cart}
+        removeFromCart={removeFromCart}
+        updateItemQuantity={updateItemQuantity}
+        clearCart={clearCart}
+      ></Header>
       <main className="container-xl mt-5">
         <h2 className="text-center">Nuestra Colección</h2>
 
